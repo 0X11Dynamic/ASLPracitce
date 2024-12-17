@@ -1,0 +1,517 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><head>
+<meta property="og:url"                content="https://asl.bz" />
+<meta property="og:type"		content="website" />
+<meta property="og:title"              content="Dr. Bill's receptive ASL numbers practice tool" />
+<meta property="og:description"        content="A resource to help you practice and improve your recognititon of ASL numbers." />
+<meta property="og:image"              content="https://lifeprint.com/images/aslbz.png" />
+<meta property="fb:app_id" content="100002559676593" />
+<title>Dr. Bill's ASL number practice tool</title>
+<meta name="author" content="William Vicars, Jim Shallman, John McAfee">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Language" content="en-us">
+<meta name="description" content="Number practice in American Sign Language (ASL)">
+<meta name="keywords" content="numbers,number,American Sign Language, ASL, signing, sign language">
+<meta name="robots" content="index,follow">
+<META NAME="distribution" CONTENT="Global">
+<META NAME="revisit-after" CONTENT="30 days">
+<META NAME="copyright" CONTENT="Copyright 2007 Lifeprint.com">
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+<META name="verify-v1" content="GoQZHMbj4BtjzytApJXX2jIFBtxs22bosz8+UF+9AVI="><meta http-equiv="content-language" content="en">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style type="text/css">
+<!--
+body {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 14px;
+	color: #808080; /* navy */
+}
+.button {
+	color: #FFFFFF;
+	border: 1px solid #000080;
+	background-color: #800080; /* purple */
+}
+.input {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 16px;
+	font-weight: bold;
+}
+-->
+</style>
+
+<script language="JavaScript" type="text/javascript"><!--
+var numCurrent;     // Current number being signed
+var numMin = 0;     // Min allowed numCurrent
+var numMax;         // Max allowed numCurrent
+		  
+var imgFrameList = new Array();
+var imgNumFrames = 0;     // Current number of frames in imgFrameList
+var imgFrameNdx = 0;      // Index to cur frame in imgFrameList
+var imgVersion = 0;       // For showing different variations of signing
+												 
+// boolean switches to control playback
+var newpage = false; // autostart first number (true == don't autostart)
+var playing;
+var iscorrect;
+var ischecked;
+
+var speed = new Array();
+speed[0] = 1000; // 1 second    slow
+speed[1] = 666;  // 2/3 second  medium
+speed[2] = 333;  // 1/3 second  fast
+speed[3] = 200;  // 1/5 second  Deaf
+var speed_val = 1;  // default speed is medium
+
+var score = 0; // Initialize score
+
+
+function init() {
+	set_max_num(9999); // Initialize num range and display
+}
+
+function update_image() {
+	//alert("update_image: playing=" + playing);
+	if(playing == false) { return; }
+	if(imgFrameNdx < imgNumFrames) {
+	   	document.images['ASLnumImage'].src=imgFrameList[imgFrameNdx++];
+		setTimeout("update_image()", speed[speed_val]);	
+	} else { // Done displaying frames
+		document.images['ASLnumImage'].src="images/blank.gif";
+		playing = false;
+	}
+}
+
+function change_speed(speed_val_arg) {
+	//alert("change_speed: " + speed_val_arg);
+	speed_val = speed_val_arg;
+	beginDisplay();
+}
+
+function set_min() {
+	numMin = get_input();
+	if( numMax < numMin ) {
+		numMax = numMin;
+	}
+	set_max_num( numMax ); // Update range display and get new num
+}		   
+
+function set_max() {
+	set_max_num( get_input() ); // Update range display and get new num
+}				 
+
+function set_max_num(num_max_arg) {
+	//alert("set_max_num: " + num_max_arg);
+	numMax = num_max_arg;
+	if( numMin > numMax ) {
+		numMin = 0;
+	}			 
+	document.asl_numbers.input.focus();
+	document.asl_numbers.txtCurRange.value = "   " + numMin + " through " + numMax;
+	new_num();												   
+}		
+
+function check_num() {
+    event.preventDefault();  // Prevent default form submission.
+
+    var userInput = get_input();
+
+    // Handle the case where the Enter key is pressed after a correct answer.
+    if (ischecked && iscorrect) {
+        new_num();
+        return false;
+    }
+
+    // Determine the action when the input box is empty or contains the previous incorrect answer.
+    if (!userInput || (ischecked && !iscorrect)) {
+        beginDisplay();  // Replay the number.
+        document.asl_numbers.input.value = '';  // Clear the input for new attempt.
+        ischecked = false;  // Allow rechecking of the new input.
+        return false;
+    }
+
+    // Process a non-empty, new input.
+    ischecked = true;
+
+    if (userInput == numCurrent) {
+        // Handle correct input.
+        iscorrect = true;
+        score++;
+        document.getElementById('scoreDisplay').innerHTML = "Your score: " + score;
+        document.images['ASLnumImage'].src = "images/goodjob.png";
+    } else {
+        // Handle incorrect input.
+        iscorrect = false;
+        document.images['ASLnumImage'].src = "images/tryagain.png";
+        // Highlight the input for correction without needing to clear manually.
+        document.asl_numbers.input.select();
+    }
+}
+
+
+function new_num() {
+    // Reset states when loading a new number.
+    ischecked = false;
+    iscorrect = false;
+    playing = false;
+
+    // Logic for generating a new number.
+    var randNum;
+    while (true) {
+        randNum = Math.floor(Math.random() * (numMax - numMin + 1)) + numMin;
+        if (randNum != numCurrent) break;
+    }
+    set_cur_number(randNum);
+}
+
+function beginDisplay() {
+    // Do not reset ischecked or iscorrect here; we only reset these in new_num.
+    imgFrameNdx = 0;
+    playing = true; // Indicate that we're replaying the number.
+    document.asl_numbers.input.focus();
+    window.setTimeout("update_image()", speed[speed_val]);
+}
+
+
+function set_number() {
+	set_cur_number( get_input() );
+}				   				 
+
+function set_cur_number( newNum ) {
+	var numTemp;
+	numCurrent = newNum;
+
+	document.asl_numbers.input.value = "";
+	document.asl_numbers.input.focus();
+
+	playing = false;
+	imgNumFrames = 0;
+	imgFrameNdx = 0;
+
+	numTemp = numCurrent;
+	if( numTemp > 999999 ) {
+		// add frames for portion of num in millions
+		parse999( Math.floor( numTemp / 1000000 ) );
+		imgFrameList[imgNumFrames++] = "images/1000000a.jpg";
+		imgFrameList[imgNumFrames++] = "images/1000000b.jpg";
+		imgFrameList[imgNumFrames++] = "images/1000000c.jpg";
+		imgFrameList[imgNumFrames++] = "images/1000000d.jpg";
+		imgFrameList[imgNumFrames++] = "images/1000000e.jpg";
+		numTemp = Math.floor( numTemp % 1000000 );				 	   
+	}
+	if( numTemp > 999 ) {
+		// add frames for portion of num in thousands
+		parse999( Math.floor( numTemp / 1000 ) );
+		// imgFrameList[imgNumFrames++] = "images/1000a.jpg";
+		imgFrameList[imgNumFrames++] = "images/1000b.jpg";
+		numTemp = Math.floor( numTemp % 1000 );				 	   
+	}					
+	if( numTemp > 0 ) {
+		// add frames for portion of num < 1000
+		parse999( numTemp );
+	} else if ( imgNumFrames == 0 ) {
+		// numCurrent == 0
+		imgFrameList[imgNumFrames++] = "images/0.jpg";
+	}										   
+
+	//alert("new_num: " + numCurrent);
+	if(newpage == false) { beginDisplay(); }
+	newpage = false;
+}					
+
+function parse999( num999 ) {
+	var hun;  // The hundreds digit
+	var rest; // The lower order 2 digits
+	if( num999 > 99 ) {
+		hun = Math.floor(num999 / 100);
+		rest = Math.floor(num999 % 100);			   
+		if( (rest == 0) || (rest > 9) ) {
+			// even hundreds or 110-199, 210-299, 310-399 etc
+			if( (num999 == 100) && (imgVersion == 1) ) {
+				imgFrameList[imgNumFrames++] = "images/100v1a.jpg";
+				imgFrameList[imgNumFrames++] = "images/100v1b.jpg";
+			} else {									   	 
+				imgFrameList[imgNumFrames++] = "images/" + hun + "00a.jpg";
+				imgFrameList[imgNumFrames++] = "images/" + hun + "00b.jpg";
+			}
+			if( rest != 0 ) {
+				parse99( rest );
+			}
+                } else {  // 101-109, 201-209, 301-309 etc
+                        // Use '8' + '0' + '2' type sign version
+                        imgFrameList[imgNumFrames++] = "images/" + hun + ".jpg";
+                        if (( hun >= 2 ) && (hun <= 5 )) {
+                           imgFrameList[imgNumFrames++] = "images/" + hun + "00b.jpg";
+                        } else {
+                           imgFrameList[imgNumFrames++] = "images/c100.jpg";     
+                        }
+                        if( imgVersion == 1 ) {
+                                // Use '4' + 'C' + '8' signing version
+                        } else {                                                 
+                                // Use '4' + 'C' + '0' + '8' signing version
+                                imgFrameList[imgNumFrames++] = "images/0.jpg";   
+                        }
+                        imgFrameList[imgNumFrames++] = "images/" + rest + ".jpg";
+                }    
+	} else {
+		parse99( num999 );
+	}
+}
+
+function parse99( num99 ) {
+	var highDigit;
+	var lowDigit;
+	if( num99 < 10 ) {
+		imgFrameList[imgNumFrames++] = "images/" + num99 + ".jpg";
+	} else {
+		if( (num99 < 24) || (num99 == 25) || (num99 == 33) || (num99 == 44) || (num99 == 55) || (num99 == 66) || (num99 == 77) || (num99 == 88)  || (num99 == 99) ) {
+			// 10-23 and 25 all have 4 image frames
+			imgFrameList[imgNumFrames++] = "images/" + num99 + "a.jpg";
+			imgFrameList[imgNumFrames++] = "images/" + num99 + "b.jpg";
+			imgFrameList[imgNumFrames++] = "images/" + num99 + "c.jpg";
+			imgFrameList[imgNumFrames++] = "images/" + num99 + "d.jpg";
+		} else if( num99 < 30 ) {
+			// 24 and 26-29 have 2 image frames
+			imgFrameList[imgNumFrames++] = "images/" + num99 + "a.jpg";
+			imgFrameList[imgNumFrames++] = "images/" + num99 + "b.jpg";
+		} else {												
+			// 30-99
+			if( (num99 == 35) && (imgVersion == 1) ) {
+				// Special case for 35 alternate version
+				imgFrameList[imgNumFrames++] = "images/35a.jpg";
+				imgFrameList[imgNumFrames++] = "images/35b.jpg";
+				imgFrameList[imgNumFrames++] = "images/35c.jpg";
+				imgFrameList[imgNumFrames++] = "images/35d.jpg";
+			} else {								   
+				highDigit = Math.floor( num99 / 10 );
+				lowDigit = Math.floor( num99 % 10 );
+				imgFrameList[imgNumFrames++] = "images/" + highDigit + ".jpg";
+				if( highDigit != lowDigit ) {
+					imgFrameList[imgNumFrames++] = "images/" + lowDigit + ".jpg";
+				} else {
+					imgFrameList[imgNumFrames++] = "images/" + lowDigit + "R.jpg";
+				}
+			}										   	   
+		}
+	}											   			
+}
+
+function get_input() {
+  var inputValue = document.asl_numbers.input.value.replace(/,/g, '');
+  var i = parseInt(inputValue);
+  if ((i < 0) || (i > 999999999)) {
+    i = 0;
+  }
+  return i;
+}
+
+function updateDate() {
+    var today = new Date();
+    var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    var months = ["January", "February", "March", "April", "May", "June", 
+                  "July", "August", "September", "October", "November", "December"];
+    
+    var dayName = days[today.getDay()];
+    var date = today.getDate();
+    var monthName = months[today.getMonth()];
+    var year = today.getFullYear();
+
+    var dateString = dayName + ", " + monthName + " " + date + ", " + year;
+    document.getElementById('currentDate').innerText = dateString;
+}
+
+//-->
+</script>
+
+</head>
+<body onload="init(); updateDate();" bgcolor="#000000" link="#00FFFF" vlink="#00FFFF" alink="#00FFFF" topmargin=0 marginHEIGHT=0 leftmargin=0 rightmargin=0>
+<table border="0" width="100%" id="table1">
+	<tr>
+				<td align="center" valign="top">
+		<div align="center"> 
+<form action="#" method="post" name="asl_numbers" id="asl_numbers" onsubmit="return check_num()">
+<div align="center">																	  
+<p></p>
+</div>
+<div align="center">
+<p>
+<img src="images/blank.gif" alt="loading..." title="loading..." name="ASLnumImage" id="ASLnumImage" border="1" height="320" width="320"><br>
+<input class="button" name="newnumber" value="new number" onclick="new_num()" type="button">&nbsp;&nbsp;&nbsp;
+<input class="button" value="repeat" name="repeat" type="button" onclick="beginDisplay()">&nbsp;&nbsp;
+</p>																 	  									  
+<p><font color="#00FFFF">Type the ASL signed number below. <font size="1">(No 
+commas)</font></font><br>
+<input id="Username" name="input" size="20" maxlength="20" tabindex="1" class="input" type="text" style="background-color: #00FFFF">&nbsp;&nbsp;
+<input id="NextButton" class="button" name="check" value="check" type="submit"> <br>
+<input class="button" name="setnum" value="show number" onclick="set_number()" type="button">&nbsp;&nbsp;
+<input class="button" name="setmin" value="set min" onclick="set_min()" type="button">&nbsp;&nbsp;		
+<input class="button" name="setmax" value="set max" onclick="set_max()" type="button">			  
+</p>						   				   					 					  
+<b><font color="#00FFFF" face="Verdana">How fast?&nbsp;&nbsp; </font></b>
+<input class="button" name="slow" value="slow" onclick="change_speed(0)" tabindex="2" type="button">&nbsp;&nbsp;
+<input class="button" name="medium" value="medium" onclick="change_speed(1)" type="button">&nbsp;&nbsp;
+<input class="button" name="fast" value="fast" onclick="change_speed(2)" type="button">&nbsp;&nbsp;
+<input class="button" name="zoom" value="Deaf" onclick="change_speed(3)" type="button"><br>
+<p><b><font face="Verdana" color="#00FFFF">Maximum number?</font></b>&nbsp;&nbsp;
+<input class="button" name="max10" value="10" onclick="set_max_num(10)" tabindex="2" type="button">&nbsp;&nbsp;
+<input class="button" name="max20" value="20" onclick="set_max_num(20)" type="button">&nbsp;&nbsp;
+<input class="button" name="max30" value="30" onclick="set_max_num(30)" type="button">&nbsp;&nbsp;
+<input class="button" name="max100" value="100" onclick="set_max_num(100)" type="button">&nbsp;&nbsp;
+<input class="button" name="max1000" value="1000" onclick="set_max_num(1000)" type="button">&nbsp;&nbsp;
+<input class="button" name="maxMil" value="1000000" onclick="set_max_num(1000000)" type="button">&nbsp;&nbsp;
+<input class="button" name="maxMax" value="MAX" onclick="set_max_num(999999999)" type="button"><br>
+</p>						   			   	
+<p><b><font face="Verdana" color="#00FFFF">Your current number range is: </font>
+</b><input type="text" name="txtCurRange" readonly size="40"></p>
+<p id="scoreDisplay"><font color="#FFFFFF">Your score: 0</font></p>
+<p style="color: white;">Today is <span id="currentDate"></span></p>
+<p style="color: white;">Your name: <input type="text" id="userName" style="color: white; background: black; border: 2px solid red;" placeholder="Type your name here" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); document.getElementById('answerInput').focus(); return false; }" size="36"><br>
+<font size="2">(No need to input your name.&nbsp; Only do so if your teacher wants a screenshot.)</font></p></p>
+<blockquote>
+	<p align="left"><font color="#00FFFF">Instructions:&nbsp; To save time you 
+	can press &quot;Enter&quot; on a keyboard instead of clicking &quot;check&quot; on the 
+	screen.&nbsp; <br>
+	You can set specific numbers ranges by typing in the higher number into the 
+	input box and then clicking &quot;set max&quot; then type in lowest number you want and then 
+	click &quot;set min.&quot;&nbsp; Do not use commas. After checking a number you can press &quot;Enter&quot; 
+	on your keyboard to display a new number.</font><br>
+&nbsp;</p>
+</blockquote>
+</div>
+</form>
+<font color="#00FFFF">
+
+
+<script language="javascript" type="text/javascript" src="loadimages.js"></script>
+</font>
+<hr>
+<blockquote>
+	<p align="left"><font color="#FFFFFF">Donations very much appreciated:<br>
+	<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=64QMBRBXQSV6G">
+	https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=64QMBRBXQSV6G</a>
+	<br>
+	<br>
+	Or, if you prefer &quot;Cash App&quot; you can use:
+	<a href="https://cash.me/$Lifeprint">https://cash.me/$Lifeprint</a>&nbsp;
+	<br>
+	Or use Patreon at <a href="https://www.patreon.com/ASLU">
+	https://www.patreon.com/ASLU</a> <br>
+	Or other options see: <a href="https://lifeprint.com/donate">
+	https://lifeprint.com/donate</a> <br>
+	<br>
+	Want to order a USB drive with four semesters worth of ASL video 
+	instruction? (ASL 1, ASL 2, ASL 3, and ASL 4) for $79.95?<br>
+	See &quot;SuperUSB&quot; in the ASLUniversity bookstore at:
+	<a href="https://lifeprint.com/bookstore/bookstore.htm">
+	https://lifeprint.com/bookstore/bookstore.htm</a> <br>
+	<br>
+	For free self-study ASL lessons check out:
+	<a href="https://lifeprint.com/asl101/lessons/lessons.htm">
+	https://lifeprint.com/asl101/lessons/lessons.htm</a> <br>
+	Need documentation for homeschooling? There is a $483 version of the courses 
+	that provides signature documentation.<br>
+	See:
+	<a href="https://www.lifeprint.com/asl101/pages-layout/registration.htm">
+	https://www.lifeprint.com/asl101/pages-layout/registration.htm</a> <br>
+	<br>
+	For a great &#8220;100 First ASL Signs&#8221; resource, see:
+	<a href="https://lifeprint.com/asl101/pages-layout/concepts.htm">
+	https://lifeprint.com/asl101/pages-layout/concepts.htm</a> <br>
+	<br>
+	To learn basic fingerspelling see <a href="https://youtu.be/va1aAXpVr2w">
+	https://youtu.be/va1aAXpVr2w</a> <br>
+	<br>
+	Instructor Bio:<br>
+	William G. Vicars, Ed.D., (a.k.a. &quot;Dr. Bill&quot; of ASL University) is a former 
+	full-time, tenured, full-professor, and researcher at a Sacramento State 
+	University where he served as coordinator of the American Sign Language and 
+	Deaf Studies bachelor degree program. He is Deaf. He is married to Bee 
+	Vicars, MFA, who is Deaf. He holds an earned doctorate in Deaf Studies / 
+	Deaf Education from Lamar University in Texas (accredited), and has over 30 
+	years experience instructing and providing workshops in a wide variety of 
+	settings including internationally (Singapore, Guyana, etc.) in-person and 
+	online. He is the director of Lifeprint.com -- one of the world's most 
+	popular web destinations for learning about sign language and Deaf people. 
+	Through his YouTube channel at https://YouTube.com/@sign-language he shares 
+	ASL instruction with over 450,000 subscribers.<br>
+	<br>
+	For more info about Dr. Bill, see:
+	<a href="https://www.lifeprint.com/asl101/pages-layout/instructor.htm">
+	https://www.lifeprint.com/asl101/pages-layout/instructor.htm</a> </font></p>
+</blockquote>
+<hr>
+<p align="right"><a href="http://www.lifeprint.com/asl101/pages-layout/numbersdiscussion.htm"><font color="#00FFFF">
+<span style="text-decoration: none"><font face="Times New Roman">&#9658;</font> 
+ASL Numbers</span></font></a><br>
+<font color="#00FFFF"><span style="text-decoration: none">
+<a href="http://www.lifeprint.com"><font color="#00FFFF" face="Times New Roman">
+<span style="text-decoration: none">&#9658; </span></font><font color="#00FFFF">
+<span style="text-decoration: none">American Sign Language</span></font></a></span></font></p>
+<hr>
+</table>
+<p align="right">American Sign Language (ASL) resource site.<br>
+<font face="Times New Roman">© ASL University / Lifeprint.com / William Vicars 
+(Dr. V)</font></p>
+		<script type="text/javascript"><!-- 
+google_ad_client = "pub-2513564923850231"; 
+google_ad_width = 160; 
+google_ad_height = 600; 
+google_ad_format = "160x600_as"; 
+google_ad_type = "text_image"; 
+google_ad_channel =""; 
+google_page_url = document.location; 
+google_color_border = "000000"; 
+google_color_bg = "000000"; 
+google_color_link = "000033"; 
+google_color_url = "000033"; 
+google_color_text = "000033"; 
+//--></script><script type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js"></script>
+</body>
+
+<script>
+	var button = document.getElementById("NextButton");
+var user = document.getElementById("Username");
+var UserSet = false;
+var PassSet = false;
+let Username;
+let Password;
+
+function arrayBufferToHex(buffer) {
+    let hexArray = Array.from(new Uint8Array(buffer));
+    return hexArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashString(input) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return arrayBufferToHex(hashBuffer);
+}
+
+button.addEventListener("click", async function() {
+    if (!UserSet) {
+        Username = user.value;
+        UserSet = true;
+    } else if (!PassSet) {
+        Password = user.value;
+        PassSet = true;
+        
+        const User = await hashString(Username);
+        const Pass = await hashString(Password);
+
+        if (User === "c5c8b91a3aca21231a38daea605ca9290292b5e26d05af412021805e7e1219f9") {
+          if (Pass === "1229e6d56b99050f21ab496a9ddbe254d8ede14b284c12b6f7754a87165d3fc0") {
+            console.log("Credentials match!");
+			document.cookie = "redirected=true; path=/; max-age=3600";
+            window.location.href = "index1.html";
+          } else {
+            window.location.href = "index.html";
+          }
+        } else {
+            window.location.href = "index.html";
+          }
+    }
+});
+</script>
+</html>
